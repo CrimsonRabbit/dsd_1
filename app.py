@@ -76,13 +76,13 @@ except Exception as e:
     has_data = False
     st.error(f"데이터 로드 오류: {e}")
 
-# =============== Page Title ===============
+# =============== Page Title (fixed triple quotes) ===============
 st.markdown(
-    f\"""
+    f"""
     <div style="background:{BRAND['bg']}; padding: 18px 22px; border-radius: 14px; border: 1px solid {BRAND['light']};">
       <h1 style="margin:0; color:{BRAND['ink']}">월별 매출 대시보드</h1>
     </div>
-    \""",
+    """,
     unsafe_allow_html=True
 )
 
