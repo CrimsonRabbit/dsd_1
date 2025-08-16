@@ -4,13 +4,13 @@ import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
 
-# ================= Brand Colors =================
+# ================= Brand Colors (requested) =================
 BRAND = {
-    "ink": "#383D49",       # 진회색
-    "bg": "#F5F6FB",        # 연한 회색 배경
-    "blue": "#0046F8",      # 메인 블루
-    "sky": "#84ADD6",       # 보조 스카이블루
-    "light": "#EFF8FE",     # 라이트 블루
+    "primary": "#173A6D",   # 메인 네이비
+    "ink": "#7A7C88",       # 본문 텍스트 그레이
+    "bg": "#F3F5FC",        # 배경
+    "muted": "#7F838C",     # 보조 그레이(음수/보조 요소)
+    "accent": "#8FA0B2",    # 보조 블루그레이
 }
 
 st.set_page_config(page_title="월별 매출 대시보드", layout="wide")
@@ -76,11 +76,11 @@ except Exception as e:
     has_data = False
     st.error(f"데이터 로드 오류: {e}")
 
-# =============== Page Title (fixed triple quotes) ===============
+# =============== Page Title ===============
 st.markdown(
     f"""
-    <div style="background:{BRAND['bg']}; padding: 18px 22px; border-radius: 14px; border: 1px solid {BRAND['light']};">
-      <h1 style="margin:0; color:{BRAND['ink']}">월별 매출 대시보드</h1>
+    <div style="background:{BRAND['bg']}; padding: 18px 22px; border-radius: 14px; border: 1px solid {BRAND['accent']};">
+      <h1 style="margin:0; color:{BRAND['primary']}">월별 매출 대시보드</h1>
     </div>
     """,
     unsafe_allow_html=True
@@ -110,12 +110,12 @@ col4.metric("누적/목표", f"{cum_last/unit_div:,.1f} / {goal/unit_div:,.1f} {
 def layout_xy(y_title):
     return dict(
         margin=dict(t=50, r=20, b=50, l=60),
-        xaxis=dict(title="월", tickangle=-45, gridcolor=BRAND["light"], zerolinecolor=BRAND["light"]),
-        yaxis=dict(title=y_title, gridcolor=BRAND["light"], zerolinecolor=BRAND["light"]),
+        xaxis=dict(title="월", tickangle=-45, gridcolor=BRAND["accent"], zerolinecolor=BRAND["accent"]),
+        yaxis=dict(title=y_title, gridcolor=BRAND["accent"], zerolinecolor=BRAND["accent"]),
         paper_bgcolor=BRAND["bg"],
         plot_bgcolor=BRAND["bg"],
         font=dict(color=BRAND["ink"]),
-        legend=dict(bgcolor=BRAND["bg"], bordercolor=BRAND["light"]),
+        legend=dict(bgcolor=BRAND["bg"], bordercolor=BRAND["accent"]),
     )
 
 # PNG 다운로드 헬퍼
@@ -138,8 +138,8 @@ def line_sales_vs_prev():
     fig.add_trace(go.Scatter(
         x=df["월"], y=df["매출액_단위"], mode="lines+markers+text" if show_labels else "lines+markers",
         name="당해 매출",
-        line=dict(color=BRAND["blue"], width=3),
-        marker=dict(color=BRAND["blue"]),
+        line=dict(color=BRAND["primary"], width=3),
+        marker=dict(color=BRAND["primary"]),
         text=[f"{v:,.0f}" if show_labels else "" for v in df["매출액_단위"]],
         textposition="top center",
         hovertemplate="%{x}<br>%{y:,.0f} " + unit_name + "<extra></extra>"
@@ -147,8 +147,8 @@ def line_sales_vs_prev():
     fig.add_trace(go.Scatter(
         x=df["월"], y=df["전년동월_단위"], mode="lines+markers+text" if show_labels else "lines+markers",
         name="전년동월 매출",
-        line=dict(color=BRAND["sky"], width=3),
-        marker=dict(color=BRAND["sky"]),
+        line=dict(color=BRAND["accent"], width=3),
+        marker=dict(color=BRAND["accent"]),
         text=[f"{v:,.0f}" if show_labels else "" for v in df["전년동월_단위"]],
         textposition="top center",
         hovertemplate="%{x}<br>%{y:,.0f} " + unit_name + "<extra></extra>"
@@ -156,14 +156,14 @@ def line_sales_vs_prev():
     fig.add_trace(go.Scatter(
         x=[df.loc[max_idx, "월"]], y=[df.loc[max_idx, "매출액_단위"]],
         mode="markers+text", name="최대",
-        marker=dict(size=16, symbol="star", color=BRAND["light"], line=dict(color=BRAND["blue"], width=2)),
+        marker=dict(size=16, symbol="star", color=BRAND["bg"], line=dict(color=BRAND["primary"], width=2)),
         text=["최대"], textfont=dict(color=BRAND["ink"]), textposition="bottom center",
         hovertemplate="%{x}<br>최대: %{y:,.0f} " + unit_name + "<extra></extra>"
     ))
     fig.add_trace(go.Scatter(
         x=[df.loc[min_idx, "월"]], y=[df.loc[min_idx, "매출액_단위"]],
         mode="markers+text", name="최소",
-        marker=dict(size=14, symbol="x", color=BRAND["ink"]),
+        marker=dict(size=14, symbol="x", color=BRAND["muted"]),
         text=["최소"], textfont=dict(color=BRAND["ink"]), textposition="bottom center",
         hovertemplate="%{x}<br>최소: %{y:,.0f} " + unit_name + "<extra></extra>"
     ))
@@ -171,7 +171,7 @@ def line_sales_vs_prev():
     return fig
 
 def bar_rate():
-    colors = [BRAND["blue"] if v >= 0 else BRAND["ink"] for v in df["증감률"]]
+    colors = [BRAND["primary"] if v >= 0 else BRAND["muted"] for v in df["증감률"]]
     patterns = ["" if v >= 0 else "/" for v in df["증감률"]]
     fig = go.Figure(go.Bar(
         x=df["월"], y=df["증감률"],
@@ -189,8 +189,8 @@ def cum_with_goal():
         x=df["월"], y=df["누적매출_단위"],
         mode="lines+markers+text" if show_labels else "lines+markers",
         name="누적 매출",
-        line=dict(color=BRAND["blue"], width=3),
-        marker=dict(color=BRAND["blue"]),
+        line=dict(color=BRAND["primary"], width=3),
+        marker=dict(color=BRAND["primary"]),
         text=[f"{v:,.0f}" if show_labels else "" for v in df["누적매출_단위"]],
         textposition="top center",
         hovertemplate="%{x}<br>%{y:,.0f} " + unit_name + "<extra></extra>"
@@ -199,7 +199,7 @@ def cum_with_goal():
         fig.add_trace(go.Scatter(
             x=[df["월"].iloc[0], df["월"].iloc[-1]],
             y=[goal / unit_div, goal / unit_div],
-            mode="lines", name="목표", line=dict(dash="dash", color=BRAND["ink"])
+            mode="lines", name="목표", line=dict(dash="dash", color=BRAND["muted"])
         ))
     fig.update_layout(title=f"누적 매출 추이 · 단위: {unit_name}", **layout_xy(f"누적 매출({unit_name})"))
     return fig
@@ -207,7 +207,7 @@ def cum_with_goal():
 def heat_rate():
     fig = go.Figure(data=go.Heatmap(
         x=df["월"], y=["증감률"], z=[df["증감률"]],
-        colorscale=[[0, BRAND["ink"]], [0.5, BRAND["light"]], [1, BRAND["blue"]]],
+        colorscale=[[0, BRAND["muted"]], [0.5, BRAND["bg"]], [1, BRAND["primary"]]],
         showscale=True, hovertemplate="%{x} · %{z:.1f}%<extra></extra>"
     ))
     fig.update_layout(title="증감률 히트맵", margin=dict(t=50, r=20, b=50, l=60),
