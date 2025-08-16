@@ -4,6 +4,15 @@ import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
 
+# ================= Brand Colors =================
+BRAND = {
+    "ink": "#383D49",       # 진회색
+    "bg": "#F5F6FB",        # 연한 회색 배경
+    "blue": "#0046F8",      # 메인 블루
+    "sky": "#84ADD6",       # 보조 스카이블루
+    "light": "#EFF8FE",     # 라이트 블루
+}
+
 st.set_page_config(page_title="월별 매출 대시보드", layout="wide")
 
 # =============== Sidebar Controls ===============
@@ -67,7 +76,15 @@ except Exception as e:
     has_data = False
     st.error(f"데이터 로드 오류: {e}")
 
-st.title("월별 매출 대시보드")
+# =============== Page Title ===============
+st.markdown(
+    f\"""
+    <div style="background:{BRAND['bg']}; padding: 18px 22px; border-radius: 14px; border: 1px solid {BRAND['light']};">
+      <h1 style="margin:0; color:{BRAND['ink']}">월별 매출 대시보드</h1>
+    </div>
+    \""",
+    unsafe_allow_html=True
+)
 
 if not has_data:
     st.stop()
@@ -93,10 +110,12 @@ col4.metric("누적/목표", f"{cum_last/unit_div:,.1f} / {goal/unit_div:,.1f} {
 def layout_xy(y_title):
     return dict(
         margin=dict(t=50, r=20, b=50, l=60),
-        xaxis=dict(title="월", tickangle=-45),
-        yaxis=dict(title=y_title),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+        xaxis=dict(title="월", tickangle=-45, gridcolor=BRAND["light"], zerolinecolor=BRAND["light"]),
+        yaxis=dict(title=y_title, gridcolor=BRAND["light"], zerolinecolor=BRAND["light"]),
+        paper_bgcolor=BRAND["bg"],
+        plot_bgcolor=BRAND["bg"],
+        font=dict(color=BRAND["ink"]),
+        legend=dict(bgcolor=BRAND["bg"], bordercolor=BRAND["light"]),
     )
 
 # PNG 다운로드 헬퍼
@@ -118,31 +137,41 @@ def line_sales_vs_prev():
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=df["월"], y=df["매출액_단위"], mode="lines+markers+text" if show_labels else "lines+markers",
-        name="당해 매출", text=[f"{v:,.0f}" if show_labels else "" for v in df["매출액_단위"]],
-        textposition="top center"
+        name="당해 매출",
+        line=dict(color=BRAND["blue"], width=3),
+        marker=dict(color=BRAND["blue"]),
+        text=[f"{v:,.0f}" if show_labels else "" for v in df["매출액_단위"]],
+        textposition="top center",
+        hovertemplate="%{x}<br>%{y:,.0f} " + unit_name + "<extra></extra>"
     ))
     fig.add_trace(go.Scatter(
         x=df["월"], y=df["전년동월_단위"], mode="lines+markers+text" if show_labels else "lines+markers",
-        name="전년동월 매출", text=[f"{v:,.0f}" if show_labels else "" for v in df["전년동월_단위"]],
-        textposition="top center"
+        name="전년동월 매출",
+        line=dict(color=BRAND["sky"], width=3),
+        marker=dict(color=BRAND["sky"]),
+        text=[f"{v:,.0f}" if show_labels else "" for v in df["전년동월_단위"]],
+        textposition="top center",
+        hovertemplate="%{x}<br>%{y:,.0f} " + unit_name + "<extra></extra>"
     ))
     fig.add_trace(go.Scatter(
         x=[df.loc[max_idx, "월"]], y=[df.loc[max_idx, "매출액_단위"]],
         mode="markers+text", name="최대",
-        marker=dict(size=14, symbol="star", color="#10b981"),
-        text=["최대"], textposition="bottom center"
+        marker=dict(size=16, symbol="star", color=BRAND["light"], line=dict(color=BRAND["blue"], width=2)),
+        text=["최대"], textfont=dict(color=BRAND["ink"]), textposition="bottom center",
+        hovertemplate="%{x}<br>최대: %{y:,.0f} " + unit_name + "<extra></extra>"
     ))
     fig.add_trace(go.Scatter(
         x=[df.loc[min_idx, "월"]], y=[df.loc[min_idx, "매출액_단위"]],
         mode="markers+text", name="최소",
-        marker=dict(size=12, symbol="x", color="#ef4444"),
-        text=["최소"], textposition="bottom center"
+        marker=dict(size=14, symbol="x", color=BRAND["ink"]),
+        text=["최소"], textfont=dict(color=BRAND["ink"]), textposition="bottom center",
+        hovertemplate="%{x}<br>최소: %{y:,.0f} " + unit_name + "<extra></extra>"
     ))
     fig.update_layout(title=f"월별 매출 vs 전년동월 · 단위: {unit_name}", **layout_xy(f"매출액({unit_name})"))
     return fig
 
 def bar_rate():
-    colors = ["#10b981" if v >= 0 else "#ef4444" for v in df["증감률"]]
+    colors = [BRAND["blue"] if v >= 0 else BRAND["ink"] for v in df["증감률"]]
     patterns = ["" if v >= 0 else "/" for v in df["증감률"]]
     fig = go.Figure(go.Bar(
         x=df["월"], y=df["증감률"],
@@ -160,14 +189,17 @@ def cum_with_goal():
         x=df["월"], y=df["누적매출_단위"],
         mode="lines+markers+text" if show_labels else "lines+markers",
         name="누적 매출",
+        line=dict(color=BRAND["blue"], width=3),
+        marker=dict(color=BRAND["blue"]),
         text=[f"{v:,.0f}" if show_labels else "" for v in df["누적매출_단위"]],
-        textposition="top center"
+        textposition="top center",
+        hovertemplate="%{x}<br>%{y:,.0f} " + unit_name + "<extra></extra>"
     ))
     if goal and goal > 0:
         fig.add_trace(go.Scatter(
             x=[df["월"].iloc[0], df["월"].iloc[-1]],
             y=[goal / unit_div, goal / unit_div],
-            mode="lines", name="목표", line=dict(dash="dash")
+            mode="lines", name="목표", line=dict(dash="dash", color=BRAND["ink"])
         ))
     fig.update_layout(title=f"누적 매출 추이 · 단위: {unit_name}", **layout_xy(f"누적 매출({unit_name})"))
     return fig
@@ -175,10 +207,12 @@ def cum_with_goal():
 def heat_rate():
     fig = go.Figure(data=go.Heatmap(
         x=df["월"], y=["증감률"], z=[df["증감률"]],
-        colorscale=[[0, "#ef4444"], [0.5, "#f8fafc"], [1, "#10b981"]],
+        colorscale=[[0, BRAND["ink"]], [0.5, BRAND["light"]], [1, BRAND["blue"]]],
         showscale=True, hovertemplate="%{x} · %{z:.1f}%<extra></extra>"
     ))
-    fig.update_layout(title="증감률 히트맵", margin=dict(t=50, r=20, b=50, l=60))
+    fig.update_layout(title="증감률 히트맵", margin=dict(t=50, r=20, b=50, l=60),
+                      paper_bgcolor=BRAND["bg"], plot_bgcolor=BRAND["bg"],
+                      font=dict(color=BRAND["ink"]))
     return fig
 
 # =============== Rendering by Focus ===============
